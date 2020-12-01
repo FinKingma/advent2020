@@ -2,10 +2,10 @@
   "name": "advent2020",
   "version": "1.0.0",
   "description": "advent of code solutions 2020",
-  "main": "1/1.ts",
+  "main": "1/2.ts",
   "type": "module",
   "scripts": {
-    "start": "node --experimental-modules 1/1.ts"
+    "start": "node --experimental-modules 1/2.ts"
   },
   "repository": {
     "type": "git",

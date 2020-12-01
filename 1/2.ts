@@ -1,7 +1,7 @@
 import fs from 'fs'
 
 const promise = new Promise((resolve, reject) => {
-    fs.readFile("1/1.txt", 'utf8', function(err, data) {
+    fs.readFile("1/2.txt", 'utf8', function(err, data) {
         if (err) {
             reject(err)
         } else {
@@ -11,10 +11,12 @@ const promise = new Promise((resolve, reject) => {
 
             for (let i=0;i<values.length;i++) {
                 for (let j=0;j<values.length;j++) {
-                    if (i != j) {
-                        if (values[i] + values[j] === result) {
-                            answer = values[i] * values[j]
-                            resolve(answer)
+                    for (let k=0;k<values.length;k++) {
+                        if (i != j && i != k && j != k) {
+                            if (values[i] + values[j] + values[k] === result) {
+                                answer = values[i] * values[j] * values[k]
+                                resolve(answer)
+                            }
                         }
                     }
                 }
