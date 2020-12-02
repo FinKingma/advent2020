@@ -5,25 +5,38 @@ const regexp: RegExp = /(\d*)-(\d*)\s([a-zA-Z]):\s(.+)/;
 
 // Creation
 const observable = new Observable((observer) => {
-    fs.readFile("2/1.txt", 'utf8', function(err, data) {
+    fs.readFile("2/2.txt", 'utf8', function(err, data) {
         if (err) {
             observer.error(err)
         } else {
             let rows = data.split('\n');
             for (let row of rows) {
                 const rowReg = row.match(regexp);
-                const min = rowReg[1]
-                const max = rowReg[2]
+                const posA = rowReg[1]
+                const posB = rowReg[2]
                 const char = rowReg[3]
                 const pw = rowReg[4]
                 
-                const occurances = pw.split(char).length - 1
+                const charAtA = pw[+posA - 1]
+                const charAtB = pw[+posB - 1]
 
-                // console.log('min: ' + min + ' | max: ' + max + ' | char: ' + char + ' | pw: ' + pw)
-                // console.log('occured: ' + occurances);
-                if (occurances >= +min && occurances <= +max) {
+                // console.log(row)
+                // console.log(charAtA)
+
+                if (charAtA === charAtB) {
+                    // console.log('chars are same')
+                    continue
+                }
+
+                if (charAtA === char || charAtB === char) {
+                    // console.log('found valid pw! ' + row)
                     observer.next(pw)
                 }
+
+                // console.log('occured: ' + occurances);
+                // if (occurances >= +min && occurances <= +max) {
+                //     observer.next(pw)
+                // }
                 
             }
         }
