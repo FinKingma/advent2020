@@ -1,16 +1,9 @@
 {
+    "compileOnSave": false,
     "compilerOptions": {
-        "outDir": "./dist/",
-        "sourceMap": false,
-        "noImplicitAny": false,
-        "module": "commonjs",
-        "target": "es2015"
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "**/*.spec.ts"
-    ]
-}
+      "declaration": false,
+      "moduleResolution": "node",
+      "lib": ["es5", "es2015"],
+      "target": "es2017"
+    }
+  }
