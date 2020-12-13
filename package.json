@@ -5,7 +5,7 @@
   "main": "1/2.ts",
   "type": "module",
   "scripts": {
-    "start": "ts-node 12/2.ts"
+    "start": "ts-node 13/2.ts"
   },
   "repository": {
     "type": "git",
