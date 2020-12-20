@@ -5,7 +5,8 @@
   "main": "1/2.ts",
   "type": "module",
   "scripts": {
-    "start": "ts-node 20/2.ts"
+    "start": "ts-node 20/2.ts",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -22,5 +23,9 @@
     "rxjs": "^6.6.3",
     "ts-node": "^9.0.0",
     "util": "^0.12.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.19",
+    "jest": "^26.6.3"
   }
 }

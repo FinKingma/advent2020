@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import { async, EMPTY, Observable } from 'rxjs';
 
-class Tile {
+export class Tile {
     id:number;
     degrees:number = 0;
     left: Border;
@@ -72,34 +72,31 @@ const readFile = async(file:string): Promise<Tile[]> => {
     })
 }
 
-const rotateTileBy90 = (tile:Tile) => {
-    let tempTop = tile.top;
-    tile.top = tile.right
-    tile.right = tile.bottom
-    tile.right.pocket = tile.right.pocket.split('').reverse().join('')
-    tile.bottom = tile.left
-    tile.left = tempTop
-    tile.left.pocket = tile.left.pocket.split('').reverse().join('')
-
+export const rotateTileBy90 = (tile:Tile) => {
     let newGrid:string[][] = []
-    for (let i =0;i<tile.data.length;i++) {
+    for (let i =tile.data[0].length-1;i>=0;i--) {
         newGrid.push(tile.data.map(r => r[i]))
     }
     tile.data = newGrid
+
+    tile.top.pocket = tile.data[0].join('')
+    tile.bottom.pocket = tile.data[tile.data.length-1].join('')
+    tile.left.pocket = tile.data.map(r => r[0]).join('')
+    tile.right.pocket = tile.data.map(r => r[r.length-1]).join('')
     
     return tile;
 }
 
 const flip = (tile:Tile) => {
-    tile.top.pocket = tile.top.pocket.split('').reverse().join('')
-    tile.bottom.pocket = tile.bottom.pocket.split('').reverse().join('')
-
-    let tempLeft = tile.left.pocket;
-    tile.left.pocket = tile.right.pocket;
-    tile.right.pocket = tempLeft;
     tile.data.forEach(r => {
         r = r.reverse()
     })
+
+    tile.top.pocket = tile.data[0].join('')
+    tile.bottom.pocket = tile.data[tile.data.length-1].join('')
+    tile.left.pocket = tile.data.map(r => r[0]).join('')
+    tile.right.pocket = tile.data.map(r => r[r.length-1]).join('')
+
     return tile;
 }
 
@@ -113,6 +110,12 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
             if (i == 4) {
                 // console.log('turning over')
                 rotatedTile = flip(rotatedTile)
+            }
+            if (tile.id==2473 && y==1 && x==2 && solution[1][1].id==1427) {
+                //desired place for 2473
+                // console.log('pocket of 1427 ' + solution[1][1].right.pocket)
+                console.log('matching socket: ' + solution[1][1].right.pocket)
+                console.log('current left of 2473 ' + tile.left.pocket)
             }
 
             //checking left
@@ -167,6 +170,8 @@ const solveProgram = async(): Promise<number> => {
     availableTiles.splice(0,1)
 
     //start solve puzzle
+    let attempts = 0;
+    let maxAttempts = 10;
 
     do {
         findPuzzleLoop: for (let y=0;y<solution.length;y++) {
@@ -220,38 +225,32 @@ const solveProgram = async(): Promise<number> => {
                 }
             }
         }
+        attempts++;
     }
-    while (availableTiles.length > 0)
+    while (availableTiles.length > 0 && attempts <maxAttempts)
+
+    let sea:string[][] = []
+    solution.forEach(r => {
+        let height = r[0].data.length;
+        for (let i=0;i<height;i++) {
+            sea.push(r.map(t=>t?t.data[i].join(''):null).join('|').split(''))
+        }
+        let width = r[0].data[0].length * r.length
+        let separatorRow = []
+        for (let i=0;i<width;i++) {
+            separatorRow.push('-')
+        }
+        sea.push(separatorRow)
+    })
+
+    sea.forEach(r => {
+        console.log('res: ' + r.join(''))
+    })
     
     return solution[0][0].id * 
         solution[solution.length-1][0].id *
         solution[0][solution[0].length-1].id *
         solution[solution.length-1][solution[0].length-1].id;
-}
-
-const drawSolution = (solution:Tile[][]) => {
-    solution.forEach(r => {
-        r.forEach(t => {
-            if (t) {
-                let tileData:string[][] = []
-                tileData.push(t.top.pocket.split(''))
-                for (let i =1;i<9;i++) {
-                    let tempRow = [t.left.pocket.split('')[i],'.','.','.','.','.','.','.','.',t.right.pocket.split('')[i]]
-                    tileData.push(tempRow)
-                }
-                tileData.push(t.bottom.pocket.split(''))
-    
-                t.data = tileData;
-            }
-        })
-    })
-
-    solution.forEach(row => {
-        console.log('data: ' + row.map(t=>t? 'tile: '+t.id: '          ').join('            '))
-        for (let i=0;i<10;i++) {
-            console.log('data:'+row.map(t=>t?t.data[i]:'                   ').join(' | '))
-        }
-    })
 }
 
 solveProgram().then((answer) => {
