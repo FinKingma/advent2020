@@ -80,6 +80,12 @@ const rotateTileBy90 = (tile:Tile) => {
     tile.bottom = tile.left
     tile.left = tempTop
     tile.left.pocket = tile.left.pocket.split('').reverse().join('')
+
+    let newGrid:string[][] = []
+    for (let i =0;i<tile.data.length;i++) {
+        newGrid.push(tile.data.map(r => r[i]))
+    }
+    tile.data = newGrid
     
     return tile;
 }
@@ -91,6 +97,9 @@ const flip = (tile:Tile) => {
     let tempLeft = tile.left.pocket;
     tile.left.pocket = tile.right.pocket;
     tile.right.pocket = tempLeft;
+    tile.data.forEach(r => {
+        r = r.reverse()
+    })
     return tile;
 }
 
@@ -104,9 +113,6 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
             if (i == 4) {
                 // console.log('turning over')
                 rotatedTile = flip(rotatedTile)
-            }
-            if (tile.id == 3079) {
-                console.log('new layout t: ' + tile.top.pocket + ' r: ' + tile.right.pocket + ' b: ' + tile.bottom.pocket + ' l: ' + tile.left.pocket)
             }
 
             //checking left
@@ -141,24 +147,7 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
                 }
             }
 
-            // if (solution.length == 1 && y==0 && x==1 && tile.id == 3079) {
-            //     console.log('trying to click 3079 to 2311 ')
-            //     // console.log(solution[1][1].id + ': ' + solution[1][1].right.pocket)
-            //     // console.log(solution[2][0].id + ': ' + solution[2][0].top.pocket)
-            //     // console.log('how about...')
-            //     console.log('2311: ' + solution[0][0].right.pocket);
-            //     console.log('3079: ' + rotatedTile.left.pocket);
-            //     console.log('3079: ' + rotatedTile.bottom.pocket);
-            //     console.log('test: ' + solution[y][x-1].right.pocket);
-            //     console.log('res: ' + (solution[y][x-1].right.pocket != rotatedTile.left.pocket))
-            //     console.log('neighbours: ' + hasAnyNeighbours + ' mismatch: ' + hasAnyMisMatches)
-            // }
-
             if (!hasAnyMisMatches && hasAnyNeighbours) {
-                if (rotatedTile.id == 3079) {
-                    console.log('left: ' + rotatedTile.left.pocket)
-                    console.log('matches with: ' + solution[0][0].right.pocket)
-                }
                 return rotatedTile;
             }
 
@@ -168,39 +157,8 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
     return null;
 }
 
-const rotateData90 = (data:string[][]) => {
-    let newGrid:string[][] = []
-    for (let i =0;i<data.length;i++) {
-        newGrid.push(data.map(r => r[i]))
-    }
-    return newGrid
-}
-
-const rotateTileDataToMatch = (tile:Tile) => {
-    if (tile.data[0].join('') != tile.top.pocket) {
-        let attempts = 0;
-        let maxAttempts = 10;
-        do {
-            if (attempts == 4) {
-                //mirror the data
-                tile.data.forEach(r => {
-                    r = r.reverse()
-                })
-            }
-            tile.data = rotateData90(tile.data)
-            attempts++;
-        }
-        while (tile.data[0].join('') != tile.top.pocket && attempts < maxAttempts)
-
-        if (tile.data[0].join('') != tile.top.pocket) {
-            console.log('still failed trying to match tile ' + tile.id)
-        }
-        return tile;
-    }
-}
-
 const solveProgram = async(): Promise<number> => {
-    let availableTiles:Tile[] = await readFile('20/1.txt');
+    let availableTiles:Tile[] = await readFile('20/2.txt');
     let solution:Tile[][] = []
 
     //lay first tile
@@ -264,12 +222,6 @@ const solveProgram = async(): Promise<number> => {
         }
     }
     while (availableTiles.length > 0)
-
-    solution.forEach(row=> {
-        row.forEach(t => {
-            t = rotateTileDataToMatch(t)
-        })
-    })
     
     return solution[0][0].id * 
         solution[solution.length-1][0].id *
