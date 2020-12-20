@@ -71,47 +71,46 @@ const readFile = async(file:string): Promise<Tile[]> => {
 }
 
 const rotateTileBy90 = (tile:Tile) => {
-    let tempBottom = tile.bottom;
-    tile.bottom = tile.left
-    tile.left = tile.top
+    let tempTop = tile.top;
     tile.top = tile.right
-    tile.right = tempBottom
+    tile.right = tile.bottom
+    tile.right.pocket = tile.right.pocket.split('').reverse().join('')
+    tile.bottom = tile.left
+    tile.left = tempTop
+    tile.left.pocket = tile.left.pocket.split('').reverse().join('')
     
     return tile;
 }
 
-const mirrorTile = (tile:Tile) => {
-    let tempLeft = tile.left;
-    tile.left = tile.right;
-    tile.right = tempLeft;
+const flip = (tile:Tile) => {
+    tile.top.pocket = tile.top.pocket.split('').reverse().join('')
+    tile.bottom.pocket = tile.bottom.pocket.split('').reverse().join('')
+
+    let tempLeft = tile.left.pocket;
+    tile.left.pocket = tile.right.pocket;
+    tile.right.pocket = tempLeft;
     return tile;
 }
 
 const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:Tile[]) => {
-    if (availableTiles.length == 4 && y==1 && x==2) {
-        solution.forEach(r => {
-            console.log('row: ' + r.map(t=>t? t.id : ''))
-        })
-
-        // console.log('trying to find a tile that fits next to ' + solution[1][1].id)
-        // console.log(solution[1][1].id + ': ' + solution[1][1].left.pocket)
-        // console.log(solution[2][0].id + ': ' + solution[2][0].top.pocket)
-        // console.log('how about...')
-        // console.log(': ' + availableTiles.filter(t => t.id == 2729)[0].bottom.pocket);
-    }
     for (let tile of availableTiles) {
-        let hasAnyMisMatches = false;
-        let hasAnyNeighbours = false;
         for (let i=0;i<8;i++) {
+            let hasAnyMisMatches = false;
+            let hasAnyNeighbours = false;
+
             let rotatedTile = tile;
             if (i == 4) {
-                rotatedTile = mirrorTile(rotatedTile)
+                // console.log('turning over')
+                rotatedTile = flip(rotatedTile)
+            }
+            if (tile.id == 3079) {
+                console.log('new layout t: ' + tile.top.pocket + ' r: ' + tile.right.pocket + ' b: ' + tile.bottom.pocket + ' l: ' + tile.left.pocket)
             }
 
             //checking left
             if (solution[y] && solution[y][x-1]) {
                 hasAnyNeighbours = true
-                if (solution[y][x-1].right.pocket != rotatedTile.left.pocket.split('').reverse().join('')) {
+                if (solution[y][x-1].right.pocket != rotatedTile.left.pocket) {
                     hasAnyMisMatches = true
                 }
             }
@@ -127,7 +126,7 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
             //checking top
             if (solution[y-1] && solution[y-1][x]) {
                 hasAnyNeighbours = true
-                if (solution[y-1][x].bottom.pocket != rotatedTile.top.pocket.split('').reverse().join('')) {
+                if (solution[y-1][x].bottom.pocket != rotatedTile.top.pocket) {
                     hasAnyMisMatches = true
                 }
             }
@@ -140,7 +139,24 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
                 }
             }
 
+            // if (solution.length == 1 && y==0 && x==1 && tile.id == 3079) {
+            //     console.log('trying to click 3079 to 2311 ')
+            //     // console.log(solution[1][1].id + ': ' + solution[1][1].right.pocket)
+            //     // console.log(solution[2][0].id + ': ' + solution[2][0].top.pocket)
+            //     // console.log('how about...')
+            //     console.log('2311: ' + solution[0][0].right.pocket);
+            //     console.log('3079: ' + rotatedTile.left.pocket);
+            //     console.log('3079: ' + rotatedTile.bottom.pocket);
+            //     console.log('test: ' + solution[y][x-1].right.pocket);
+            //     console.log('res: ' + (solution[y][x-1].right.pocket != rotatedTile.left.pocket))
+            //     console.log('neighbours: ' + hasAnyNeighbours + ' mismatch: ' + hasAnyMisMatches)
+            // }
+
             if (!hasAnyMisMatches && hasAnyNeighbours) {
+                if (rotatedTile.id == 3079) {
+                    console.log('left: ' + rotatedTile.left.pocket)
+                    console.log('matches with: ' + solution[0][0].right.pocket)
+                }
                 return rotatedTile;
             }
 
@@ -152,9 +168,6 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
 
 const solveProgram = async(): Promise<number> => {
     let availableTiles:Tile[] = await readFile('20/1.txt');
-    // availableTiles.forEach(t => {
-    //     console.log('tile: ' + t.id + ' left: ' + t.left.pocket + ' right: ' + t.right.pocket + ' top: ' + t.top.pocket + ' bottom: ' + t.bottom.pocket)
-    // })
     let solution:Tile[][] = []
 
     //lay first tile
@@ -164,7 +177,7 @@ const solveProgram = async(): Promise<number> => {
 
     //start solve puzzle
     let attempts = 0
-    let maxAttempts = 3
+    let maxAttempts = 6
 
     do {
         findPuzzleLoop: for (let y=0;y<solution.length;y++) {
@@ -177,13 +190,12 @@ const solveProgram = async(): Promise<number> => {
 
                 for (let check of puzzleChecks) {
                     if (solution[y+check[0]] && solution[y+check[0]][x+check[1]]) {
-                        // console.log('piece is already filled at y: ' + (y+check[0]) + ' | x: ' + (x+check[1]))
+                        //already fill, nvm
                     } else {
                         let newTile = findTileThatFits(solution, y+check[0], x+check[1], availableTiles)
                         if (newTile == null) {
-                            // console.log('no tile found to put at y: ' + (y+check[0]) + ' x: ' + (x+check[1]))
                         } else {
-                            // console.log('laying tile ' + newTile.id + ' to pos y: ' + (y+check[0]) + ' x: ' + (x+check[1]))
+                            try {
                             if (x+check[1] < 0) {
                                 //column doesnt exist yet, need to shift the solutions
                                 solution.forEach(r => {
@@ -194,6 +206,14 @@ const solveProgram = async(): Promise<number> => {
                                 //row doesnt exist yet, need to shift the solutions
                                 solution.unshift([null])
                                 solution[0][x+check[1]] = newTile
+                            } else if (x+check[1] >= solution[0].length) {
+                                solution.forEach(r => {
+                                    r.push(null)
+                                })
+                                solution[y+check[0]][x+check[1]] = newTile
+                            } else if (y+check[0] >= solution.length) {
+                                solution.push([null])
+                                solution[y+check[0]][x+check[1]] = newTile
                             } else {
                                 solution[y+check[0]][x+check[1]] = newTile
                             }
@@ -204,6 +224,10 @@ const solveProgram = async(): Promise<number> => {
                             drawSolution(solution)
                             console.log('remaining tiles: ' + availableTiles.map(t=>t.id))
                             continue findPuzzleLoop;
+                        } catch (e) {
+                            console.log('error: ' + e.stack)
+                            throw new Error(e);
+                        }
                         }
                     }
                 }
@@ -212,9 +236,12 @@ const solveProgram = async(): Promise<number> => {
 
         attempts++;
     }
-    while (availableTiles.length > 0 && attempts < maxAttempts)
+    while (availableTiles.length > 0)
     
-    return 1;
+    return solution[0][0].id * 
+        solution[solution.length-1][0].id *
+        solution[0][solution[0].length-1].id *
+        solution[solution.length-1][solution[0].length-1].id;
 }
 
 const drawSolution = (solution:Tile[][]) => {
