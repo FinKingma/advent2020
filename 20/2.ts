@@ -72,7 +72,7 @@ const readFile = async(file:string): Promise<Tile[]> => {
     })
 }
 
-export const rotateTileBy90 = (tile:Tile) => {
+const rotateTileBy90 = (tile:Tile) => {
     let newGrid:string[][] = []
     for (let i =tile.data[0].length-1;i>=0;i--) {
         newGrid.push(tile.data.map(r => r[i]))
@@ -110,12 +110,6 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
             if (i == 4) {
                 // console.log('turning over')
                 rotatedTile = flip(rotatedTile)
-            }
-            if (tile.id==2473 && y==1 && x==2 && solution[1][1].id==1427) {
-                //desired place for 2473
-                // console.log('pocket of 1427 ' + solution[1][1].right.pocket)
-                console.log('matching socket: ' + solution[1][1].right.pocket)
-                console.log('current left of 2473 ' + tile.left.pocket)
             }
 
             //checking left
@@ -158,6 +152,76 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
         }
     }
     return null;
+}
+
+class SeaMonster {
+    pixels:number[][] = [[0,19],[1,0],[1,5],[1,6],[1,11],[1,12],[1,17],[1,18],[1,19],[2,1],[2,4],[2,7],[2,10],[2,13],[2,16]]
+    width:number= 20
+    height:number = 3
+}
+
+const rotateSeaBy90 = (sea:string[][]) => {
+    let newSea:string[][] = []
+    for (let i =sea[0].length-1;i>=0;i--) {
+        newSea.push(sea.map(r => r[i]))
+    }
+    sea = newSea
+
+    return sea;
+}
+
+const findSeaMonsters = (sea:string[][]) => {
+    for (let i =0;i<8;i++) {
+        if (i==4) {
+            sea.forEach(row => {
+                row = row.reverse();
+            })
+        }
+
+        if (hasASeaMonster(sea)) {
+            searchForSeaMonsters(sea);
+            return;
+        } else {
+            sea = rotateSeaBy90(sea)
+        }
+    }
+}
+
+const searchForSeaMonsters = (sea:string[][]) => {
+    let seaMonster = new SeaMonster();
+    let amountOfSeaMonsters=  0;
+
+    for (let y=0;y<sea.length-seaMonster.height;y++) {
+        pixelLoop: for (let x=0;x<sea[y].length-seaMonster.width;x++) {
+            for (let pixel of seaMonster.pixels) {
+                if (sea[y + pixel[0]][x + pixel[1]] == '#') {
+                    //found another pixel
+                } else {
+                    continue pixelLoop;
+                }
+            }
+            amountOfSeaMonsters++;
+        }
+    }
+    console.log('found ' + amountOfSeaMonsters + ' seamonsters in total')
+}
+
+const hasASeaMonster = (sea:string[][]) => {
+    let seaMonster = new SeaMonster();
+
+    for (let y=0;y<sea.length-seaMonster.height;y++) {
+        pixelLoop: for (let x=0;x<sea[y].length-seaMonster.width;x++) {
+            for (let pixel of seaMonster.pixels) {
+                if (sea[y + pixel[0]][x + pixel[1]] == '#') {
+                    //found another pixel
+                } else {
+                    continue pixelLoop;
+                }
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 const solveProgram = async(): Promise<number> => {
@@ -230,22 +294,31 @@ const solveProgram = async(): Promise<number> => {
     while (availableTiles.length > 0 && attempts <maxAttempts)
 
     let sea:string[][] = []
+
+    //remove boundaries
+    solution.forEach(row => {
+        row.forEach((t, i) => {
+            if (!t) {
+                row.splice(i, 1)
+            } else {
+                t.data.splice(0,1)
+                t.data.splice(-1,1)
+                t.data.forEach(r => {
+                    r.splice(0,1)
+                    r.splice(-1,1)
+                })
+            }
+        })
+    })
+
     solution.forEach(r => {
         let height = r[0].data.length;
         for (let i=0;i<height;i++) {
-            sea.push(r.map(t=>t?t.data[i].join(''):null).join('|').split(''))
+            sea.push(r.map(t=>t?t.data[i].join(''):null).join('').split(''))
         }
-        let width = r[0].data[0].length * r.length
-        let separatorRow = []
-        for (let i=0;i<width;i++) {
-            separatorRow.push('-')
-        }
-        sea.push(separatorRow)
     })
 
-    sea.forEach(r => {
-        console.log('res: ' + r.join(''))
-    })
+    findSeaMonsters(sea)
     
     return solution[0][0].id * 
         solution[solution.length-1][0].id *
