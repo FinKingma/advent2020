@@ -155,7 +155,7 @@ const findTileThatFits = (solution:Tile[][], y:number, x:number, availableTiles:
 }
 
 class SeaMonster {
-    pixels:number[][] = [[0,19],[1,0],[1,5],[1,6],[1,11],[1,12],[1,17],[1,18],[1,19],[2,1],[2,4],[2,7],[2,10],[2,13],[2,16]]
+    pixels:number[][] = [[0,18],[1,0],[1,5],[1,6],[1,11],[1,12],[1,17],[1,18],[1,19],[2,1],[2,4],[2,7],[2,10],[2,13],[2,16]]
     width:number= 20
     height:number = 3
 }
@@ -171,6 +171,25 @@ const rotateSeaBy90 = (sea:string[][]) => {
 }
 
 const findSeaMonsters = (sea:string[][]) => {
+    
+    // let seaMonster = new SeaMonster();
+    // let newGrid:string[][] = []
+    // for (let y =0;y<seaMonster.height;y++) {
+    //     let newRow:string[] = []
+    //     for (let x=0;x<seaMonster.width;x++) {
+    //         newRow.push('.')
+    //     }
+    //     newGrid.push(newRow)
+    // }
+    // for (let pixel of seaMonster.pixels) {
+    //     newGrid[pixel[0]][pixel[1]] = '#'
+    // }
+    // newGrid.forEach(r => {
+    //     console.log(': ' + r.join(''))
+    // })
+    sea.forEach(r => {
+        console.log('res: ' + r)
+    })
     for (let i =0;i<8;i++) {
         if (i==4) {
             sea.forEach(row => {
@@ -179,15 +198,13 @@ const findSeaMonsters = (sea:string[][]) => {
         }
 
         if (hasASeaMonster(sea)) {
-            searchForSeaMonsters(sea);
-            return;
-        } else {
-            sea = rotateSeaBy90(sea)
+            countHashesWithoutSeaMonster(sea)
         }
+        sea = rotateSeaBy90(sea)
     }
 }
 
-const searchForSeaMonsters = (sea:string[][]) => {
+const countHashesWithoutSeaMonster = (sea:string[][]) => {
     let seaMonster = new SeaMonster();
     let amountOfSeaMonsters=  0;
 
@@ -204,6 +221,15 @@ const searchForSeaMonsters = (sea:string[][]) => {
         }
     }
     console.log('found ' + amountOfSeaMonsters + ' seamonsters in total')
+    let hashes=  0
+    sea.forEach(r => {r.forEach(s=> {
+        if (s=='#') {
+            hashes++;
+        }
+    })})
+    console.log('amount of hashes: ' + hashes)
+    console.log('each seamonster has ' + seaMonster.pixels.length + ' hashes')
+    console.log('so that leaves us with ' + (hashes - (seaMonster.pixels.length * amountOfSeaMonsters)))
 }
 
 const hasASeaMonster = (sea:string[][]) => {
@@ -226,6 +252,7 @@ const hasASeaMonster = (sea:string[][]) => {
 
 const solveProgram = async(): Promise<number> => {
     let availableTiles:Tile[] = await readFile('20/2.txt');
+    console.log('tiles: ' + availableTiles.length)
     let solution:Tile[][] = []
 
     //lay first tile
@@ -234,8 +261,7 @@ const solveProgram = async(): Promise<number> => {
     availableTiles.splice(0,1)
 
     //start solve puzzle
-    let attempts = 0;
-    let maxAttempts = 10;
+
 
     do {
         findPuzzleLoop: for (let y=0;y<solution.length;y++) {
@@ -289,9 +315,8 @@ const solveProgram = async(): Promise<number> => {
                 }
             }
         }
-        attempts++;
     }
-    while (availableTiles.length > 0 && attempts <maxAttempts)
+    while (availableTiles.length > 0)
 
     let sea:string[][] = []
 
@@ -320,10 +345,7 @@ const solveProgram = async(): Promise<number> => {
 
     findSeaMonsters(sea)
     
-    return solution[0][0].id * 
-        solution[solution.length-1][0].id *
-        solution[0][solution[0].length-1].id *
-        solution[solution.length-1][solution[0].length-1].id;
+    return 1;
 }
 
 solveProgram().then((answer) => {
