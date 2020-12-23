@@ -1,99 +1,171 @@
 import * as fs from 'fs'
 import { async, EMPTY, Observable } from 'rxjs';
 
-const readFile = async(file:string): Promise<string[]> => {
-    return new Promise<string[]>((resolve) => {
+const readFile = async(file:string): Promise<PlayerCards> => {
+    return new Promise<PlayerCards>((resolve) => {
         fs.readFile(file, 'utf8', (err, data) => {
             if (err) {
                 throw new Error('something went wrong: ' + err)
             } else {
-                resolve(data.split('\n'))
+                let rows = data.split('\n')
+                let playerCards:PlayerCards = new PlayerCards();
+                let player2Start = false
+                for (let row of rows) {
+                    if (row.startsWith('Player 2')) {
+                        player2Start = true;
+                        continue;
+                    } else if (row.startsWith('Player 1') || row == '') {
+                        continue;
+                    }
+
+                    if (!player2Start) {
+                        playerCards.player1.push(+row)
+                    } else {
+                        playerCards.player2.push(+row)
+                    }
+                }
+                resolve(playerCards)
             }
         })
     })
 }
 
-class GroceryList {
-    items:GroceryRow[] = []
+class PlayerCards {
+    player1:number[] = []
+    player2:number[] = []
 }
 
-class GroceryRow {
-    ingredients:string[] = []
-    allergens:string[] = []
+const hasOccuredInThePast = async(history: PlayerCards[], currentHand: PlayerCards) => {
+    for (let step of history) {
+        if (haveSameValues(step.player1, currentHand.player1) && haveSameValues(step.player2, currentHand.player2)) {
+            return true;
+        }
+    }
+    return false;
 }
 
-let regexp = new RegExp('(\\a+) ', 'g')
-const solveProgram = async(): Promise<number> => {
-    let ingredientList:string[] = await readFile('21/2.txt');
+const haveSameValues = (arr1:number[], arr2:number[]) => {
 
-    let groceryList:GroceryList = new GroceryList();
-    let allergenLists:Map<string, string[]> = new Map();
+    if (arr1.length != arr2.length) {
+        return false;
+    }
+    for (let i=0;i<arr2.length;i++) {
+        if (arr1[i] != arr2[i]) {
+            return false;
+        }
+    }
+    return true;
+}
 
-    for (let row of ingredientList) {
-        let res = row.replace(')','').split(' (')
-        let ingredients = res[0]
-        let allergens = res[1].split(', ').map(a=>a.replace('contains','').trim())
-        let groceryRow = new GroceryRow();
-        groceryRow.allergens = allergens;
-        groceryRow.ingredients = ingredients.split(' ');
-        groceryList.items.push(groceryRow)
+const copy = async(playerCards:PlayerCards) => {
+    let copy = new PlayerCards();
+    copy.player1 = []
+    copy.player2 = []
+    playerCards.player1.forEach(c => copy.player1.push(c))
+    playerCards.player2.forEach(c => copy.player2.push(c))
+    return copy;
+}
 
-        for (let allergen of allergens) {
-            if (allergenLists.has(allergen)) {
-                let existingIngredients = allergenLists.get(allergen)
-                existingIngredients.push(ingredients)
-                allergenLists.set(allergen, existingIngredients)
+const playGame = async(playerCards:PlayerCards, level:number) => {
+    let history:PlayerCards[] = []
+    let round = 0;
+    //play game
+    do {
+        round++;
+        if (level == 1) {
+            console.log(level + ' playing round ' + round)
+            console.log(level + ' cards p1:' + playerCards.player1)
+            console.log(level + ' cards p2:' + playerCards.player2)
+        }
+        if (await hasOccuredInThePast(history, playerCards)) {
+            if (level == 1) {
+                console.log(level + ' infinite loop occured at ' + round)
+                console.log(level + ' player 1 automatically wins')
+            }
+            return playerCards;
+        }
+        history.push(await copy(playerCards))
+
+        if (playerCards.player1[0] < playerCards.player1.length && playerCards.player2[0] < playerCards.player2.length) {
+            if (level == 1) {
+                console.log(level + ' playing recursive with cards ' + playerCards.player1[0]  + ' ' + playerCards.player2[0])
+            }
+            let recursiveCards = await copy(playerCards)
+            //remove first card and only keep amount of cards equal to drawn card
+            recursiveCards.player1 = recursiveCards.player1.slice(1,playerCards.player1[0]+1)
+            recursiveCards.player2 = recursiveCards.player2.slice(1,playerCards.player2[0]+1)
+
+            if (level == 1) {
+                console.log(level + ' playing recursive with decks p1:' + recursiveCards.player1 + ' p2:' + recursiveCards.player2)
+            }
+            recursiveCards = await playGame(recursiveCards, level+1)
+            if (recursiveCards.player1.length == 0) {
+                if (level == 1) {
+                    console.log(level + ' player 2 won recursive game')
+                }
+                playerCards.player2.push(playerCards.player2[0])
+                playerCards.player2.push(playerCards.player1[0])
+            } else if (recursiveCards.player2.length == 0) {
+                if (level == 1) {
+                    console.log(level + ' player 1 won recursive game')
+                }
+                playerCards.player1.push(playerCards.player1[0])
+                playerCards.player1.push(playerCards.player2[0])
             } else {
-                allergenLists.set(allergen, [ingredients])
+                if (level == 1) {
+                    console.log('p1:' + recursiveCards.player1.length + ' p2:' + recursiveCards.player2.length)
+                    console.log(level + ' something weird happened, likely loop discovered, player 1 gets all points')
+                }
+                playerCards.player1.push(playerCards.player1[0])
+                playerCards.player1.push(playerCards.player2[0])
             }
-        }
-    }
-
-    let allergensCandidates:Map<string, string[]> = new Map();
-    for (let [key,value] of allergenLists) {
-        let ingredients = value[0].split(' ')
-        for (let y=0;y<ingredients.length;y++) {
-            let ingredientToCheck = ingredients[y]
-
-            let occursInAllLists = true;
-            for (let z=1;z<value.length;z++) {
-                if (value[z].indexOf(ingredientToCheck) == -1) {
-                    occursInAllLists = false
+        } else {
+            //play normal round
+            if (playerCards.player1[0] > playerCards.player2[0]) {
+                //player 1 wins round
+                playerCards.player1.push(playerCards.player1[0])
+                playerCards.player1.push(playerCards.player2[0])
+                if (level == 1) {
+                    console.log(level + ' player 1 wins round ' + round + ' p1:' + playerCards.player1[0] + ' p2:' + playerCards.player2[0])
+                }
+            } else {
+                //player 2 wins round
+                playerCards.player2.push(playerCards.player2[0])
+                playerCards.player2.push(playerCards.player1[0])
+                if (level == 1) {
+                    console.log(level + ' player 2 wins round ' + round + ' p1:' + playerCards.player1[0] + ' p2:' + playerCards.player2[0])
                 }
             }
-            if (occursInAllLists) {
-                if (allergensCandidates.has(key)) {
-                    allergensCandidates.get(key).push(ingredientToCheck)
-                } else {
-                    allergensCandidates.set(key, [ingredientToCheck])
-                }
-            }
         }
+        playerCards.player1.splice(0,1)
+        playerCards.player2.splice(0,1)
+    }
+    while (playerCards.player1.length > 0 && playerCards.player2.length > 0)
+
+    if (level == 1) {
+        playerCards.player1.forEach(c=> console.log(c))
     }
 
-    allergensCandidates.forEach((i,k) => {
-        console.log(k + ': ' + i)
-    })
+    return playerCards;
+}
 
-    let safeOccurances=0;
+const solveProgram = async(): Promise<number> => {
+    let playerCards:PlayerCards = await readFile('22/2.txt');
+    // console.log('p1: ' + playerCards.player1)
+    // console.log('p2: ' + playerCards.player2)
 
-    for (let item of groceryList.items) {
-        for (let ingredient of item.ingredients) {
-            let isAllergenIngredient = false;
-            allergensCandidates.forEach(v => {
-                v.forEach(i => {
-                    if (i==ingredient) {
-                        isAllergenIngredient = true;
-                    }
-                })
-            })
-            if (!isAllergenIngredient) {
-                safeOccurances++;
-            }
-        }
+    playerCards = await playGame(playerCards,1)
+
+    console.log('p1: ' + playerCards.player1)
+    console.log('p2: ' + playerCards.player2)
+
+    let winningPlayer = playerCards.player1.length>0 ? playerCards.player1 : playerCards.player2
+    let score = 0
+    let maxScore = winningPlayer.length;
+    for (let i=0;i<winningPlayer.length;i++) {
+        score += winningPlayer[i]*(maxScore-i)
     }
-    
-    return safeOccurances;
+    return score;
 }
 
 solveProgram().then((answer) => {
