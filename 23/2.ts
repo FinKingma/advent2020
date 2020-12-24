@@ -15,20 +15,20 @@ const readFile = async(file:string): Promise<number[]> => {
 
 const solveProgram = async(): Promise<number> => {
     let cups:number[] = await readFile('23/2.txt');
-    // for (let i=10;i<=1000000;i++) {
-    //     cups.push(i)
-    // }
-    // console.log('cups: ' + cups.length)
+    for (let i=10;i<=1000000;i++) {
+        cups.push(i)
+    }
+    console.log('cups: ' + cups.length)
 
     let currentCup = 0
     let currentCupValue = cups[currentCup]
     let maxCupValue = cups.length
-    let rounds = 100;
+    let rounds = 10000000;
 
     for (let round=1;round<=rounds;round++) {
-        console.log('---------ROUND ' + round + ' --------')
-        console.log('cups ' + cups)
-        console.log('current cup ' + currentCupValue + ' at i:' + currentCup)
+        // console.log('---------ROUND ' + round + ' --------')
+        // console.log('cups ' + cups)
+        // console.log('current cup ' + currentCupValue + ' at i:' + currentCup)
         
         let slicedCups = cups.slice(currentCup+1, currentCup+4)
         cups.splice(currentCup+1, 3)
@@ -41,7 +41,7 @@ const solveProgram = async(): Promise<number> => {
         }
 
         // console.log('cups after slice ' + cups)
-        console.log('pickup: ' + slicedCups)
+        // console.log('pickup: ' + slicedCups)
 
         //find destination cup
         let destinationCup = -1;
@@ -53,7 +53,7 @@ const solveProgram = async(): Promise<number> => {
                 destinationCupValue = maxCupValue;
             } else {
                 destinationCup = cups.indexOf(destinationCupValue)
-                console.log('destination ' + destinationCupValue + ' at index ' + destinationCup)
+                // console.log('destination ' + destinationCupValue + ' at index ' + destinationCup)
             }
         }
         while (destinationCup == -1)
@@ -77,7 +77,7 @@ const solveProgram = async(): Promise<number> => {
         currentCupValue = cups[currentCup]
     }
 
-    console.log('final cups ' + cups)
+    // console.log('final cups ' + cups)
 
     let indexOfOne;
     cups.forEach((c,i) => 
@@ -85,10 +85,8 @@ const solveProgram = async(): Promise<number> => {
         indexOfOne = i
     } })
 
-    let firstPart = cups.slice(indexOfOne+1)
-    let lastPart = cups.slice(0, indexOfOne)
-    let answer = firstPart.join('') + lastPart.join('')
-    return +answer;
+    let cup1Index = cups.indexOf(1)
+    return cups[cup1Index+1];
 }
 
 solveProgram().then((answer) => {
